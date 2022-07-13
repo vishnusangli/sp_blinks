@@ -1,4 +1,5 @@
 # %% 
+from msilib.schema import Class
 import numpy as np
 import pandas as pd
 import neurokit2 as nk
@@ -32,9 +33,34 @@ plt.grid()
 # %%
 blinks = nk.signal_findpeaks(eog_cleaned, relative_height_min=0)
 print(f"{len(blinks['Peaks'])} Blinks found")
-# %%
 df_blinks = pd.DataFrame(blinks)
 
 # %%
 blink_params.blink_stats.perform(eog_cleaned, df_blinks)
+# %%
+from blinkit import blink_fit
+# %%
+curr_blink = df_blinks.iloc[0]
+blink_range = eog_cleaned[int(curr_blink["Onsets"]): int(curr_blink["Offsets"])]
+norm_data = data.normalize(blink_range)
+plt.plot(norm_data)
+x = range(len(norm_data))
+# %%
+p0 = [0.0005, 0.003, -0.002, 0.0005, 0]
+temp_func = blink_fit.fitfunc_wrapper(blink_fit.paper_func.func, p0)
+plt.plot(norm_data)
+plt.plot(temp_func(x))
+# %%
+import scipy
+popt, pcov = scipy.optimize.curve_fit(blink_fit.paper_func.func, x, norm_data, p0 = p0)
+temp_func = blink_fit.fitfunc_wrapper(blink_fit.paper_func.func, popt)
+# %%
+plt.plot(norm_data)
+plt.plot(temp_func(x))
+# %%
+# %
+# %%
+popt, pcov, x, y = blink_fit.lsqr_fit(norm_data, blink_fit.paper_func, p0, sampling_rate = 1, centering = False)
+# %%
+plt.plot(x, y)
 # %%
