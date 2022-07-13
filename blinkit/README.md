@@ -1,0 +1,1 @@
+## Python package for segmenting and characterizing blinks from EOG data

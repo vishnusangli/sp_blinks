@@ -1,0 +1,13 @@
+Metadata-Version: 2.1
+Name: blinkit
+Version: 0.0.1
+Summary: Package for segemnting, characterizing, and clustering EOG blinks
+Home-page: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+Author: Vishnu Sangli
+Author-email: vsangli@berkeley.edu
+License: MIT
+Project-URL: Plagiarism, https://www.youtube.com/watch?v=dQw4w9WgXcQ
+Description: ## Python package for segmenting and characterizing blinks from EOG data
+Platform: UNKNOWN
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
