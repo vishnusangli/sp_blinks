@@ -1,6 +1,9 @@
 import matplotlib.patches as patches
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+
+from blinkit import data, blink_fit
 
 def create_rect(arr: list, elem_lim: list, fill:bool = False, alpha: float = 1, linewidth: int = 2):
     anchor_pt = (elem_lim[0], arr[elem_lim[0]])
@@ -49,3 +52,14 @@ def plot_blinks(blink_imgs, name = None, figsize = (10, 8), numplots = (2, 3)):
     if name != None:
         plt.suptitle(f"Valid blinks for {name}")
     plt.show()
+
+def plot_compare(blink_eog: list, fits_df: pd.DataFrame, blinks_df: pd.DataFrame, blink_num: int, fit_func):
+    curr_blink = blinks_df.iloc[blink_num]
+    curr_fit = fits_df.iloc[blink_num]
+    num_params = fit_func.num_params
+
+    p0 = [curr_fit[f'param_{i}'] for i in range(num_params)]
+    start, end = int(curr_blink["Onsets"]), int(curr_blink["Offsets"])
+    plt.plot(data.normalize( blink_eog[start:end]), label = "blink", alpha = 0.7)
+    temp = blink_fit.fitfunc_wrapper(fit_func.func, p0)
+    plt.plot(temp(range(end - start)), label = "fit", alpha = 0.7)

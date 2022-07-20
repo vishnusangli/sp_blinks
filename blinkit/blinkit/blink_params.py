@@ -19,11 +19,28 @@ import numpy as np
 class blink_stats:
 
     def perform(eog_data: list, blinks_df: pd.DataFrame):
+        """
+        
+        """
         blink_stats.calc_widths(eog_data, blinks_df)
         blink_stats.calc_derivs(eog_data, blinks_df)
-        blink_stats.blink_intervals(eog_data, blinks_df)
+        blink_stats.blink_intervals(eog_data, blinks_df, int_type='backward', colname = 'pre_interval')
+        blink_stats.blink_intervals(eog_data, blinks_df, colname='post_interval')
         blink_stats.get_moments(eog_data, blinks_df)
+
     def calc_widths(eog_data: list, blinks_df: pd.DataFrame, rel_values: list = [0, 0.2, 0.5, 0.95]):
+        """
+        Calculate the array-width of specified blinks (in `blinks_df`) at relative heights from `rel_values`. \n
+        This function utilizes `scipy.signal.peak_widths`. \n
+        Arguments:
+            - `eog_data`: general EOG readings of the sample
+            - `blinks_df`: `neurokit2`-generated blinks from eog data as a `pd.DataFrame`
+            - `rel_values`: list of relative heights at width width must be calculated. Here `0` equates to 
+            blink width while `0.5` refers to the width of blinks at half height. \n
+        
+        Returns: `None` \n
+        Columns are added to the `blink_df` DataFrame, with the `"{rel_height}width"` naming convention
+        """
         for val in rel_values:
             width, width_vals, b, c = peak_widths(eog_data, blinks_df["Peaks"], rel_height = 1 - val)
             blinks_df[f"{val}width"] = width
@@ -60,7 +77,7 @@ class blink_stats:
         blinks_df["spmax_close"] = pd.Series(spmax, dtype = "Int64")
         blinks_df['spmin_open'] = pd.Series(spmin, dtype = "Int64")
     
-    def blink_intervals(eog_data: list, blinks_df: pd.DataFrame, int_type = 'forward'):
+    def blink_intervals(eog_data: list, blinks_df: pd.DataFrame, int_type = 'forward', colname = "pre_interval"):
         """
         Track the array distance between blinks. \n
         Option `int_type` list the interval type -> `{'forward', 'backward'}`
@@ -81,7 +98,7 @@ class blink_stats:
                     blink_intervals.append(np.nan)
                     continue
                 blink_intervals.append(blinks_df['Onsets'][count] - blinks_df['Offsets'][count - 1])
-        blinks_df["blink_interval"] = pd.Series(blink_intervals, dtype = "Int64")
+        blinks_df[colname] = pd.Series(blink_intervals, dtype = "Int64")
     
     def get_moments(eog_cleaned: list, blinks_df: pd.DataFrame, moments: list = [1, 2, 3, 4]):
         return_vals = []
@@ -102,3 +119,31 @@ class blink_stats:
         new_df = pd.DataFrame(return_vals, columns = [f"moment{val}" for val in moments])
         for i in new_df.columns:
             blinks_df[i] = new_df[i]
+
+
+
+
+def label_doubleblinks(blinks_df: pd.DataFrame):
+    """
+    Label blinks based on whether they're double blinks
+
+    Labeling schema:
+        - `0`: single blink
+        - `1`: first blink in double blink pair
+        - `2`: second blink in double blink pair
+    
+    Arguments: 
+        - `blinks_df`: `neurokit2`-generated blinks from eog data as a `pd.DataFrame`
+    
+    Returns:
+        - `labels`: list of corresponding labels
+    """
+    labels = []
+    for count, blink in blinks_df.iterrows():
+        if not pd.isna(blink["post_interval"] ) and blink["post_interval"] == 0:
+            labels.append(1)
+        elif not pd.isna(blink["pre_interval"]) and blink["pre_interval"] == 0:
+            labels.append(2)
+        else:
+            labels.append(0)
+    return np.array(labels)
