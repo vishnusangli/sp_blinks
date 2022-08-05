@@ -147,3 +147,35 @@ def label_doubleblinks(blinks_df: pd.DataFrame):
         else:
             labels.append(0)
     return np.array(labels)
+
+def gen_blinktable(blink_eog: list, blink_lims: list[list[int]]) -> pd.DataFrame:
+    """
+    Given a list of blink slices, this method generates the starting 
+    `neurokit`-like blink `pd.DataFrame`. It provides the following columns:
+        - `"Onsets"`: Start of blink (eog array index)
+        - `"Offsets"`: End of blink (eog array index)
+        - `"Peak"`: blink peak (eog array index)
+        - `"rise_height"`: Height of blink from start position. 
+        - `"fall_height"`: Height of blink to end position.\n
+    Height is calculated with the provided units in `blink_eog`. \n
+    Arguments:
+        - `blink_eog`: List of eog readings for the event
+        - `blink_lims`: list of integer tuples containing `[start, end]` slices
+        for blinks \n
+
+    Returns: 
+        - `blinks_df`: `pandas.DataFrame` table of blinks with information
+    """
+    blinks_arr = []
+    for blink in blink_lims:
+        start = int(blink[0])
+        end = int(blink[1])
+        blink_range = blink_eog[start:end]
+
+        peak = np.where(blink_range == np.max(blink_range))[0][0]
+        r_height = blink_range[peak] - blink_eog[start]
+        f_height = blink_range[peak] - blink_eog[end]
+        blinks_arr.append([start, end, peak + start, r_height, f_height])
+    blinks_df = pd.DataFrame(blinks_arr, columns = ['Onsets', "Offsets", "Peaks", "rise_height", "fall_height"])
+    return blinks_df
+

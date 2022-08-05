@@ -5,7 +5,7 @@ from scipy.signal import butter, lfilter, filtfilt
 def butter_lowpass(cutOff, fs, order=5):
     nyq = 0.5 * fs
     normalCutoff = cutOff / nyq
-    b, a = butter(order, normalCutoff, btype='lowpass', analog = True)
+    b, a = butter(order, normalCutoff, btype='lowpass', analog = False)
     return b, a
 
 def butter_lowpass_filter(data, cutOff, fs, order=4):

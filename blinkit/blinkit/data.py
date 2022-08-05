@@ -121,7 +121,7 @@ def normalize(arr):
     """Basic normlization that divides by range
     """
     minimum, maximum = np.min(arr), np.max(arr)
-    return np.divide(arr - minimum, maximum - minimum)
+    return np.divide(arr, maximum)
 
 class ChangePointDetect:
     def savgol_method(arr, e = 1e-14):
@@ -237,7 +237,11 @@ def lims_change(arr: list, blink_lims: list, e = 1e-2):
     """
     for elem in range(int(np.average(blink_lims)), blink_lims[-1]):
         if arr[elem] <= e:
-            return [blink_lims[0], elem]
+            blink_lims = [blink_lims[0], elem]
+    for elem in range(blink_lims[0], int(np.average(blink_lims))):
+        if arr[elem] >= e:
+            blink_lims = [elem, blink_lims[1]]
+            break
     return blink_lims
 
 def filter_blinks(arr: list, blink_lims:list, threshold = 0.5, duration = 1000):
@@ -249,7 +253,7 @@ def filter_blinks(arr: list, blink_lims:list, threshold = 0.5, duration = 1000):
     def filt(lims):
         if lims[1] - lims[0] <= 30:
             return False
-        return lims[1] - lims[0] <= duration and np.max(arr[lims[0]:lims[1]]) >= threshold
+        return np.all(~pd.isna(lims)) and lims[1] - lims[0] <= duration and np.max(arr[int(lims[0]):int(lims[1])]) >= threshold
     return np.array([filt(i) for i in blink_lims])
 
 def group_blinks(arr, blink_lims, e = 50):

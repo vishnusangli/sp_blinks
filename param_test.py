@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import neurokit2 as nk
 import matplotlib.pyplot as plt
+import scipy
 
 import settings
 from blinkit import io
@@ -36,6 +37,24 @@ print(f"{len(blinks['Peaks'])} Blinks found")
 df_blinks = pd.DataFrame(blinks)
 
 # %%
+temp = ["Onsets", "Offsets"]
+lims = np.array(df_blinks[temp].values, dtype = int)
+plt.figure(figsize=(10, 8))
+plt.plot(eog_cleaned)
+#plt.scatter(zero_vals, data.point_locate(dtd_data, zero_vals), alpha = 0.1)
+for i in range(len(lims)):
+    if lims[i][0] < 0 or lims[i][1] > len(eog_cleaned):  continue
+    elems = np.arange(*lims[i], dtype = int)
+    plt.plot(elems, eog_cleaned[elems], alpha = 0.5, color =  'crimson')
+    box = plot.create_rect(eog_cleaned, lims[i], alpha = 0.3, fill = False)
+    plt.gca().add_patch(box)
+plt.grid()
+plt.xlim([0000, 5000])
+#og = scipy.signal.detrend(filtered_data)
+#og = np.divide(og, np.max(og))
+#plt.plot(og, color = 'gray')
+
+# %%
 blink_params.blink_stats.perform(eog_cleaned, df_blinks)
 # %%
 fits = blink_fit.gen_fits(eog_cleaned, df_blinks, blink_fit.paper_func, p0 = None)
@@ -53,33 +72,7 @@ plt.grid()
 plt.title(f"Comparison of blink and fit for blink {val}")
 
 # %%
-def label_doubleblinks(blinks_df: pd.DataFrame):
-    """
-    Label blinks based on whether they're double blinks
-
-    Labeling schema:
-        - `0`: single blink
-        - `1`: first blink in double blink pair
-        - `2`: second blink in double blink pair
-    
-    Arguments: 
-        - `blinks_df`: `neurokit2`-generated blinks from eog data as a `pd.DataFrame`
-    
-    Returns:
-        - `labels`: list of corresponding labels
-    """
-    labels = []
-    for count, blink in blinks_df.iterrows():
-        if not pd.isna(blink["post_interval"] ) and blink["post_interval"] == 0:
-            labels.append(1)
-        elif not pd.isna(blink["pre_interval"]) and blink["pre_interval"] == 0:
-            labels.append(2)
-        else:
-            labels.append(0)
-    return np.array(labels)
-
-# %%
-blink_labels = label_doubleblinks(df_blinks)
+blink_labels = blink_params.label_doubleblinks(df_blinks)
 # %%
 x = fits['param_0']
 y = fits["param_1"]
@@ -127,3 +120,72 @@ ax.set_zlim3d([-1, 1])
 plt.show()
 
 # %%
+blink_lims = []
+for count, blink in df_blinks.iterrows():
+    start = blink["Onsets"]
+    end = blink["Offsets"]
+
+    if pd.isna(start) or pd.isna(end):
+        continue
+    blink_lims.append([int(start), int(end)])
+
+dtd_data = np.divide(eog_cleaned, np.max(eog_cleaned))
+from scipy.signal import detrend
+dtd_data = detrend(dtd_data)
+# %%
+filt = data.filter_blinks(dtd_data, blink_lims, threshold=0.2, duration = 900)
+good_blinks = [] #Operating the filter on list
+for i in range(len(blink_lims)):
+    if filt[i]:
+        good_blinks.append(blink_lims[i])
+        plt.plot(*data.center_blink(dtd_data[blink_lims[i][0]: blink_lims[i][1]]))
+plt.grid()
+#plt.yscale('log')
+# %%
+new_blinks = [[1829, 1984],
+ [2613, 2697],
+ [4863, 5011],
+ [5340, 5436],
+ [5859, 5974],
+ [6390, 6514],
+ [6862, 6970],
+ [8151, 8233],
+ [9458, 9554],
+ [10565, 10653],
+ [11386, 11483],
+ [12386, 12475],
+ [13177, 13282],
+ [14802, 14872],
+ [16019, 16152],
+ [18003, 18095],
+ [19416, 19503],
+ [20908, 20997],
+ [22202, 22346]]
+# %%
+i = 6
+j = 5
+eog_list = filtered_data
+
+plt.figure(figsize = (10, 8))
+ax = plt.axes()
+ax.set_facecolor("black")
+plt.plot(*data.center_blink(eog_list[good_blinks[i][0]: good_blinks[i][1]]), alpha = 0.7, label = "neuro", color = "aquamarine")
+plt.plot(*data.center_blink(eog_list[new_blinks[j][0]: new_blinks[j][1]]), alpha = 0.7, label = "mine", color = "yellow")
+plt.legend()
+
+
+plt.grid()
+print(good_blinks[i])
+print(new_blinks[j])
+# %%
+list(zip(good_blinks, new_blinks + []))
+# %%
+blinks = nk.signal_findpeaks(data.detrend_standardize(filtered_data), relative_height_min=0)
+print(f"{len(blinks['Peaks'])} Blinks found")
+df_blinks = pd.DataFrame(blinks)
+# %%
+"""
+Use personal smoothening/data cleaning method
+Apply neurokit's find_peaks
+Filter blinks based on height, width, etc using filter_blinks
+"""

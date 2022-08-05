@@ -6,9 +6,10 @@ import matplotlib.pyplot as plt
 from blinkit import data, blink_fit
 
 def create_rect(arr: list, elem_lim: list, fill:bool = False, alpha: float = 1, linewidth: int = 2):
-    anchor_pt = (elem_lim[0], arr[elem_lim[0]])
     rec_width = elem_lim[1]- elem_lim[0]
-    rect_height = max(arr[elem_lim[0]: elem_lim[1]])
+    max_y, min_y = max(arr[elem_lim[0]: elem_lim[1]]), min(arr[elem_lim[0]],  arr[elem_lim[1]])
+    rect_height = max_y - min_y
+    anchor_pt = (elem_lim[0], min_y)
     rect_obj = patches.Rectangle(anchor_pt, rec_width, rect_height, fill = fill, alpha = alpha, lw = linewidth)
     return rect_obj
 
